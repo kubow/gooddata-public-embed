@@ -2,14 +2,11 @@
 
 A demo application to showcase a custom UI for interacting with [GoodData Cloud / CN instances](https://www.gooddata.com/docs/). It is using [GoodData Python SDK](https://www.gooddata.com/docs/python-sdk/latest/) library in the background.
 
-![screenshot](./screenshot.png)
-
 Main functionality include:
 
-- Workspace layout display
-- Dashboard embedding and declarative display
-- Display users and groups
-- Parse CSVs to SQL datasets
+- Selecting proper content (workspace and dashboard)
+- Dashboard embedding
+- Visualizing dashboard by an object graph
 
 ## How to deploy a working prototype
 
@@ -20,7 +17,6 @@ The first step is to fork the repository or download it and publish to your own 
 3. Fill custom variables into `.streamlit/secrets.toml` file: 
    - [endpoint URL](https://www.gooddata.com/developers/cloud-native/doc/cloud/getting-started/get-gooddata/) as `GOODDATA_HOST`
    - [personal access token](https://www.gooddata.com/developers/cloud-native/doc/cloud/getting-started/create-api-token/) as `GOODDATA_TOKEN`
-   - [OpenAI API key](https://platform.openai.com/docs/quickstart?context=python) as `OPENAI_API_KEY` and `OPENAI_ORGANIZATION` 
 4. Run the streamlit app
    - vscode config (usually bound to <kbd>F5</kbd> key)
    - `python -m streamlit run app.py`
