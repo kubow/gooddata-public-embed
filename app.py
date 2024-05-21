@@ -61,7 +61,7 @@ def main():
     """
 
     with st.sidebar:
-        st.write("ESG Demo Content presented by GoodData")
+        st.write("Demo Content presented publicly by GoodData")
         ws_list = st.selectbox("Select area of interest", options=[w.name for w in st.session_state["gd"].workspaces])
         st.session_state["analytics"] = st.session_state["gd"].details(wks_id=ws_list, by="name")
         ws_dash_list = st.selectbox("Select a dashboard", [d.title for d in st.session_state["analytics"].analytical_dashboards])
@@ -71,10 +71,42 @@ def main():
     active_ws = st.session_state["gd"].specific(ws_list, of_type="workspace", by="name")
     if embed_dashboard:
         active_dash = st.session_state["gd"].specific(ws_dash_list, of_type="dashboard", by="name", ws_id=active_ws.id)
-        st.write(f"connecting to: {st.secrets['GOODDATA_HOST']}/dashboards/embedded/#/workspace/{active_ws.id}/dashboard/{active_dash.id}?apiTokenAuthentication=true&showNavigation=false&setHeight=700")
-        components.html(my_html)
-        components.iframe(
-            f"{st.secrets['GOODDATA_HOST']}/dashboards/embedded/#/workspace/{active_ws.id}/dashboard/{active_dash.id}?showNavigation=false&setHeight=700", 1400, 1500, scrolling=True)
+        st.write(f"connecting to: {st.secrets['GOODDATA_HOST']}dashboards/embedded/#/workspace/{active_ws.id}/dashboard/{active_dash.id}?apiTokenAuthentication=true&showNavigation=false&setHeight=700")
+        #components.html(my_html)
+        all_iframe = f"""
+            <iframe src={st.secrets['GOODDATA_HOST']}/dashboards/embedded/#/workspace/{active_ws.id}/dashboard/{active_dash.id}?showNavigation=false&setHeight=700">
+            </iframe>
+            <script>
+                console.log("#PARENT: Setup parent message listener");
+                window.addEventListener(
+                    "message",
+                    function (e) {{
+                        console.log("#PARENT: Post message received", e.data.gdc.event)
+                        if (e.data.gdc.event.name == "listeningForApiToken"){{
+                            const postMessageStructure = {{
+                                gdc: {{
+                                    product: "dashboard",
+                                    event: {{
+                                        name: "setApiToken",
+                                        data: {{
+                                            token: "{st.secrets["GOODDATA_TOKEN"]}"
+                                        }}
+                                    }}
+                                }}
+                            }};
+                            console.log("#PARENT: Sending token to embedded window", postMessageStructure);
+                            
+                            const origin = "*";
+                            const iframe = document.getElementById("embedded-content").contentWindow;
+                            iframe.postMessage(postMessageStructure, origin);
+                        }}
+                    }},
+                    false
+                ); 
+            </script>
+            """
+        components.html(all_iframe)
+        #components.iframe(f"{st.secrets['GOODDATA_HOST']}/dashboards/embedded/#/workspace/{active_ws.id}/dashboard/{active_dash.id}?showNavigation=false&setHeight=700", 1400, 1500, scrolling=True)
     elif display_dashboard:
         #active_dash = st.session_state["gd"].specific(ws_dash_list, of_type="dashboard", by="name", ws_id=active_ws.id)
         #st.write(f"Selected dashboard: {active_dash}")
