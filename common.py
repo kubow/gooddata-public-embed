@@ -1,4 +1,3 @@
-from fpdf import FPDF
 from gooddata_sdk import GoodDataSdk
 from gooddata_pandas import GoodPandas
 import graphviz
@@ -18,12 +17,19 @@ class LoadGoodDataSdk:
         if gd_host:
             self._sdk = GoodDataSdk.create(gd_host, gd_token)
             self._gp = GoodPandas(gd_host, gd_token)
-            self.users = (
-                self._sdk.catalog_user.list_users()
-            )  # alternative get_declarative_users()
-            self.groups = self._sdk.catalog_user.list_user_groups()
-            self.datasources = self._sdk.catalog_data_source.list_data_sources()
-            self.workspaces = self._sdk.catalog_workspace.list_workspaces()
+            try:
+                self.workspaces = self._sdk.catalog_workspace.list_workspaces()
+                # for non admins this does not work
+                self.datasources = self._sdk.catalog_data_source.list_data_sources()
+                self.users = (
+                    self._sdk.catalog_user.list_users()
+                )  # alternative get_declarative_users()
+                self.groups = self._sdk.catalog_user.list_user_groups()
+            except Exception as ex:
+                self.datasources = None
+                self.users = None
+                self.groups = None
+            
     
     def data(self, ws_id="", for_insight="", pdf_export=False, path=""):
         if for_insight:
@@ -41,7 +47,10 @@ class LoadGoodDataSdk:
             print("selecting first workspace as no one submitted")
         if by != "id":
             wks_id = self.get_id(wks_id, of_type="workspace")
-        return self._sdk.catalog_workspace_content.get_declarative_analytics_model(wks_id).analytics
+        if not self.datasources:
+            return self._sdk.catalog_workspace_content.get_declarative_analytics_model(wks_id).analytics
+        else:
+            return self._sdk.catalog_workspace_content.get_declarative_analytics_model(wks_id).analytics
 
     def export(self, wks_id: str="", by: str="id", location: str=""):
         if not wks_id:
@@ -181,22 +190,6 @@ def encapsulate(column_name: str):
     else:
         return column_name
 
-
-def dataframe_to_pdf(dataframe, pdf_path, num_pages):
-    rows_per_page = math.ceil(len(dataframe) / num_pages)
-    pdf = FPDF()
-    for page in range(num_pages):
-        start_idx = page * rows_per_page
-        end_idx = min((page + 1) * rows_per_page, len(dataframe))
-        page_df = dataframe.iloc[start_idx:end_idx]
-        pdf.add_page()
-        # Convert DataFrame to a formatted table
-        table = tabulate(page_df, headers='keys', tablefmt='grid', showindex=False)
-        # Add the table to the PDF
-        pdf.set_font("Arial", size=12)
-        pdf.multi_cell(0, 10, table)
-    # Save the PDF
-    pdf.output(pdf_path)
 
 
 def csv_to_sql(csv_filename, limit=200):
